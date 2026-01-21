@@ -1,5 +1,6 @@
 package net.druidlabs.updtr;
 
+import net.druidlabs.updtr.api.Request;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import net.druidlabs.updtr.io.InOut;
 
@@ -11,6 +12,8 @@ public class Main {
         ErrorLogger.initiate();
 
         InOut.backupMods();
+
+        new Request(248787);
 
         Thread.sleep(2000);
     }
