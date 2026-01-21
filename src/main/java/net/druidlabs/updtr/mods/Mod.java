@@ -3,6 +3,7 @@ package net.druidlabs.updtr.mods;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import io.github.andruid929.leutils.errorhandling.ErrorMessageHandler;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -116,7 +117,7 @@ public class Mod {
 
     @Override
     public String toString() {
-        return "Mod{" + getModName() + ": " + getModDescription() + " | " + getModId() + "-" + getModVersion() + "}";
+        return "Mod{" + getModName() + ": \"" + getModDescription() + "\" | " + getModId() + "-" + getModVersion() + "}";
     }
 
     @Override
