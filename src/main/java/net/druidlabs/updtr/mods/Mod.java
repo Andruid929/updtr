@@ -1,9 +1,9 @@
 package net.druidlabs.updtr.mods;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import io.github.andruid929.leutils.errorhandling.ErrorMessageHandler;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +13,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.IntFunction;
 import java.util.jar.JarFile;
 
 public class Mod {
@@ -27,12 +30,14 @@ public class Mod {
     private final String modVersion;
     private final String modName;
     private final String modDescription;
+    private final String[] modAuthors;
 
-    private Mod(String modId, String modVersion, String modName, String modDescription) {
+    private Mod(String modId, String modVersion, String modName, String modDescription, String[] modAuthors) {
         this.modDescription = modDescription;
         this.modVersion = modVersion;
         this.modName = modName;
         this.modId = modId;
+        this.modAuthors = modAuthors;
     }
 
     public String getModId() {
@@ -55,13 +60,22 @@ public class Mod {
         return modDescription;
     }
 
+    public String[] getModAuthors() {
+        if (modAuthors == null) {
+            return new String[]{};
+        }
+
+        return modAuthors;
+    }
+
     public boolean isValidMod() {
         boolean invalidId = modId.equals(DEFAULT_ID);
         boolean invalidName = modName.equals(DEFAULT_NAME);
         boolean invalidDesc = modDescription.equals(DEFAULT_DESC);
         boolean invalidVersion = modVersion.equals(DEFAULT_VERSION);
+        boolean invalidAuthors = modAuthors.length == 0;
 
-        return !invalidId && !invalidName && !invalidDesc && !invalidVersion;
+        return !invalidId && !invalidName && !invalidDesc && !invalidVersion && !invalidAuthors;
     }
 
     @Contract("_ -> new")
@@ -85,6 +99,7 @@ public class Mod {
         String version;
         String name;
         String description;
+        String[] authors;
 
         try (JarFile modFile = new JarFile(path.toFile());
              InputStream inputStream = modFile.getInputStream(modFile.getJarEntry("fabric.mod.json"));
@@ -106,18 +121,27 @@ public class Mod {
             description = gson.get("description").getAsString();
             name = gson.get("name").getAsString();
 
+            {
+                List<JsonElement> authorsList = gson.getAsJsonArray("authors").asList();
+
+                authors = authorsList.stream()
+                        .map(JsonElement::getAsString)
+                        .toArray(value -> new String[authorsList.size()]);
+            }
+
         } catch (IOException | JsonSyntaxException e) {
             ErrorLogger.logError(e);
 
-            return new Mod(DEFAULT_ID, DEFAULT_VERSION, DEFAULT_NAME, DEFAULT_DESC);
+            return new Mod(DEFAULT_ID, DEFAULT_VERSION, DEFAULT_NAME, DEFAULT_DESC, new String[]{});
         }
 
-        return new Mod(id, version, name, description);
+        return new Mod(id, version, name, description, authors);
     }
 
     @Override
     public String toString() {
-        return "Mod{" + getModName() + ": \"" + getModDescription() + "\" | " + getModId() + "-" + getModVersion() + "}";
+        return "Mod{" + getModName() + ": \"" + getModDescription() + "\" | " + getModId()
+                + "-" + getModVersion() + " | " + Arrays.toString(modAuthors)  + "}";
     }
 
     @Override
@@ -127,11 +151,12 @@ public class Mod {
         Mod mod = (Mod) o;
 
         return Objects.equals(modId, mod.modId) && Objects.equals(modVersion, mod.modVersion)
-                && Objects.equals(modName, mod.modName) && Objects.equals(modDescription, mod.modDescription);
+                && Objects.equals(modName, mod.modName) && Objects.equals(modDescription, mod.modDescription)
+                && Arrays.equals(modAuthors, mod.modAuthors);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(modId, modVersion, modName, modDescription);
+        return Objects.hash(modId, modVersion, modName, modDescription, Arrays.hashCode(modAuthors));
     }
 }

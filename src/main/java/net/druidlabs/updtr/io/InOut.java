@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.sql.Time;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -46,13 +45,13 @@ public final class InOut {
 
             Future<Long> backupTaskFuture = service.submit(backupTask);
 
-            double timeTakenInMs = backupTaskFuture.get(20, TimeUnit.MILLISECONDS);
+            double timeTakenInMs = backupTaskFuture.get();
 
             String outputString = "Backup finished in " + TimeUnitConversion.milliToSecond(timeTakenInMs) + "s";
 
             System.out.println(outputString);
 
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+        } catch (ExecutionException | InterruptedException e) {
             ErrorLogger.logError(e);
         }
     }

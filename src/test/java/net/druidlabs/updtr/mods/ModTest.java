@@ -12,12 +12,11 @@ class ModTest {
 
     @Test
     void getInfo() {
-
-
         assertEquals("Andruid's items", MOD.getModName());
         assertEquals("moreitems", MOD.getModId());
         assertEquals("Minecraft needs a little extras, here's my approach :)", MOD.getModDescription());
         assertEquals("1.9.1-1.21.11", MOD.getModVersion());
+        assertEquals("Andruid929", MOD.getModAuthors()[0]);
     }
 
     @Test
