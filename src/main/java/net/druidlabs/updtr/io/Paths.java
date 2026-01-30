@@ -18,6 +18,8 @@ public final class Paths {
 
     public static final Path MODS_BACKUP_FOLDER = MINECRAFT_FOLDER.resolve(Constants.MODS_BACKUP_FOLDER_NAME);
 
+    public static final Path APP_CONFIG_FOLDER = createPathInAppDirectory("Configuration");
+
     public static @NotNull String pathAsString(@NotNull Path path, String... extra) {
         String pathAsString = path.toString();
 

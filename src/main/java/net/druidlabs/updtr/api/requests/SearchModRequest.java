@@ -11,6 +11,8 @@ import java.io.IOException;
 
 public final class SearchModRequest extends Request {
 
+    public static final String ERROR_RESPONSE = "ERR";
+
     private int responseCode;
 
     private String response;
@@ -38,7 +40,11 @@ public final class SearchModRequest extends Request {
                 throw new RuntimeException(response);
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
+            if (!(e instanceof IOException)) {
+                response = ERROR_RESPONSE;
+            }
+
             ErrorLogger.logError(e);
         }
     }
@@ -56,7 +62,6 @@ public final class SearchModRequest extends Request {
 
     public static @NotNull SearchModRequest searchMod(String @NotNull ... searchParams) throws IOException {
         ForgeURL requestURL = new ForgeURL.Builder("v1", "mods", "search")
-                .appendParams("gameId=423")
                 .appendParams(searchParams).build();
 
         return new SearchModRequest(requestURL);

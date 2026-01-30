@@ -7,15 +7,12 @@ import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.jar.JarFile;
 
-public class Mod {
+public class Mod implements Serializable {
 
     public static final String DEFAULT_ID = "NO-ID";
     public static final String DEFAULT_NAME = "NO-NAME";
@@ -24,11 +21,13 @@ public class Mod {
     private final String modId;
     private final String modVersion;
     private final String modName;
+    private final String modFileName;
 
-    private Mod(String modId, String modVersion, String modName) {
+    protected Mod(String modId, String modVersion, String modName, String modFileName) {
         this.modVersion = modVersion;
         this.modName = modName;
         this.modId = modId;
+        this.modFileName = modFileName;
     }
 
     public String getModId() {
@@ -41,6 +40,10 @@ public class Mod {
 
     public String getModName() {
         return modName;
+    }
+
+    public String getModFileName() {
+        return modFileName;
     }
 
     public boolean isValidMod() {
@@ -94,16 +97,16 @@ public class Mod {
         } catch (IOException | JsonSyntaxException e) {
             ErrorLogger.logError(e);
 
-            return new Mod(DEFAULT_ID, DEFAULT_VERSION, DEFAULT_NAME);
+            return new Mod(DEFAULT_ID, DEFAULT_VERSION, DEFAULT_NAME, fileName);
         }
 
-        return new Mod(id, version, name);
+        return new Mod(id, version, name, fileName);
     }
 
     @Override
     public String toString() {
-        return "Mod{" + getModName() + ": \"" + "\" | " + getModId()
-                + "-" + getModVersion() + "}";
+        return "Mod{" + getModName() + " | " + getModId()
+                + ":" + getModVersion() + " | " + getModFileName() + "}";
     }
 
     @Override
@@ -113,11 +116,11 @@ public class Mod {
         Mod mod = (Mod) o;
 
         return Objects.equals(modId, mod.modId) && Objects.equals(modVersion, mod.modVersion)
-                && Objects.equals(modName, mod.modName);
+                && Objects.equals(modName, mod.modName) && Objects.equals(modFileName, mod.modFileName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(modId, modVersion, modName);
+        return Objects.hash(modId, modVersion, modName, modFileName);
     }
 }
