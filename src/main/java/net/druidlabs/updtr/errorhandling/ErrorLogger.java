@@ -1,6 +1,8 @@
 package net.druidlabs.updtr.errorhandling;
 
 import io.github.andruid929.leutils.errorhandling.ErrorMessageHandler;
+import io.github.andruid929.leutils.time.TimeUnitConversion;
+import io.github.andruid929.leutils.time.TimeUtil;
 import net.druidlabs.updtr.Constants;
 import net.druidlabs.updtr.io.Paths;
 import org.jetbrains.annotations.NotNull;
@@ -25,10 +27,6 @@ public final class ErrorLogger {
 
     private static final String ERROR_LOG_FILE = "ModupdErr.txt";
 
-    private static volatile boolean useSimpleLogs = false;
-
-    private static volatile boolean isLoggerActive = false;
-
     static {
         if (Files.notExists(Paths.APP_DIRECTORY)) {
             try {
@@ -43,35 +41,21 @@ public final class ErrorLogger {
     }
 
     public static void logError(Exception e) {
-        String toLog = ErrorMessageHandler.simpleErrorMessage(e);
-
         ErrorMessageHandler.printSimpleErrorMessage(e);
 
-        if (useSimpleLogs) {
-            errorQueue.offer(toLog);
+        String errorCause = ErrorMessageHandler.simpleErrorMessage(e);
 
-        } else {
-            String stackTrace = Arrays.stream(e.getStackTrace())
-                    .map(StackTraceElement::toString)
-                    .collect(Collectors.joining(System.lineSeparator()));
+        String stackTrace = Arrays.stream(e.getStackTrace())
+                .map(StackTraceElement::toString)
+                .collect(Collectors.joining(System.lineSeparator()));
 
-            String extendedLog = toLog.concat(System.lineSeparator())
-                    .concat(stackTrace);
+        String toLog = errorCause.concat(System.lineSeparator())
+                .concat(stackTrace);
 
-            errorQueue.offer(extendedLog);
-        }
-
-    }
-
-    private static synchronized void setSimpleLogs(boolean simpleLogs) {
-        if (useSimpleLogs != simpleLogs) {
-            useSimpleLogs = !useSimpleLogs;
-        }
+        boolean ignored = errorQueue.offer(toLog);
     }
 
     public static void initiate() {
-        if (isLoggerActive) return;
-
         Thread errorLoggerThread = new Thread(() -> {
 
             File pathToLogFile = Paths.createPathInAppDirectory(ERROR_LOG_FILE).toFile();
@@ -98,32 +82,10 @@ public final class ErrorLogger {
         errorLoggerThread.setName("UpdaterErrorLog");
         errorLoggerThread.setDaemon(true);
         errorLoggerThread.start();
-
-        isLoggerActive = true;
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-
-            File pathToLogFile = Paths.createPathInAppDirectory(ERROR_LOG_FILE).toFile();
-
-            try (FileWriter writer = new FileWriter(pathToLogFile, StandardCharsets.UTF_8, true);
-                 PrintWriter logger = new PrintWriter(writer)) {
-
-                String msg;
-                while ((msg = errorQueue.poll()) != null) {
-                    logger.println(timestampErrorMessage(msg));
-                }
-
-                logger.flush();
-
-            } catch (IOException ignored) {
-            }
-        }, "UpdaterErrorLog-ShutdownHook"));
     }
 
     private static @NotNull String timestampErrorMessage(String errMessage) {
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
-
-        String time = DateTimeFormatter.ofPattern(Constants.ERROR_LOG_TIMESTAMP_FORMAT).format(now);
+        String time = TimeUtil.captureInstant().getTime(Constants.ERROR_LOG_TIMESTAMP_FORMAT);
 
         return "[" + time + "] " + errMessage;
     }

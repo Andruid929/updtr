@@ -3,36 +3,31 @@ package net.druidlabs.updtr.mods;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import io.github.andruid929.leutils.errorhandling.ErrorMessageHandler;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.jar.JarFile;
 
-public class Mod {
+public class Mod implements Serializable {
 
     public static final String DEFAULT_ID = "NO-ID";
     public static final String DEFAULT_NAME = "NO-NAME";
-    public static final String DEFAULT_DESC = "NO-DESC";
     public static final String DEFAULT_VERSION = "NO-VERSION";
 
     private final String modId;
     private final String modVersion;
     private final String modName;
-    private final String modDescription;
+    private final String modFileName;
 
-    private Mod(String modId, String modVersion, String modName, String modDescription) {
-        this.modDescription = modDescription;
+    protected Mod(String modId, String modVersion, String modName, String modFileName) {
         this.modVersion = modVersion;
         this.modName = modName;
         this.modId = modId;
+        this.modFileName = modFileName;
     }
 
     public String getModId() {
@@ -47,21 +42,16 @@ public class Mod {
         return modName;
     }
 
-    public String getModDescription() {
-        if (modDescription == null) {
-            return "No description";
-        }
-
-        return modDescription;
+    public String getModFileName() {
+        return modFileName;
     }
 
     public boolean isValidMod() {
         boolean invalidId = modId.equals(DEFAULT_ID);
         boolean invalidName = modName.equals(DEFAULT_NAME);
-        boolean invalidDesc = modDescription.equals(DEFAULT_DESC);
         boolean invalidVersion = modVersion.equals(DEFAULT_VERSION);
 
-        return !invalidId && !invalidName && !invalidDesc && !invalidVersion;
+        return !invalidId && !invalidName && !invalidVersion;
     }
 
     @Contract("_ -> new")
@@ -84,7 +74,6 @@ public class Mod {
         String id;
         String version;
         String name;
-        String description;
 
         try (JarFile modFile = new JarFile(path.toFile());
              InputStream inputStream = modFile.getInputStream(modFile.getJarEntry("fabric.mod.json"));
@@ -103,21 +92,21 @@ public class Mod {
 
             id = gson.get("id").getAsString();
             version = gson.get("version").getAsString();
-            description = gson.get("description").getAsString();
             name = gson.get("name").getAsString();
 
         } catch (IOException | JsonSyntaxException e) {
             ErrorLogger.logError(e);
 
-            return new Mod(DEFAULT_ID, DEFAULT_VERSION, DEFAULT_NAME, DEFAULT_DESC);
+            return new Mod(DEFAULT_ID, DEFAULT_VERSION, DEFAULT_NAME, fileName);
         }
 
-        return new Mod(id, version, name, description);
+        return new Mod(id, version, name, fileName);
     }
 
     @Override
     public String toString() {
-        return "Mod{" + getModName() + ": \"" + getModDescription() + "\" | " + getModId() + "-" + getModVersion() + "}";
+        return "Mod{" + getModName() + " | " + getModId()
+                + ":" + getModVersion() + " | " + getModFileName() + "}";
     }
 
     @Override
@@ -127,11 +116,11 @@ public class Mod {
         Mod mod = (Mod) o;
 
         return Objects.equals(modId, mod.modId) && Objects.equals(modVersion, mod.modVersion)
-                && Objects.equals(modName, mod.modName) && Objects.equals(modDescription, mod.modDescription);
+                && Objects.equals(modName, mod.modName) && Objects.equals(modFileName, mod.modFileName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(modId, modVersion, modName, modDescription);
+        return Objects.hash(modId, modVersion, modName, modFileName);
     }
 }

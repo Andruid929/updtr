@@ -3,7 +3,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
-ModupdErr.txt
+SearchModResponse.json
+GetModResponse.json
 
 ### IntelliJ IDEA ###
 .idea/
