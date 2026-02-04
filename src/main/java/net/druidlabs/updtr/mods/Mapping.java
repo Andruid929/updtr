@@ -4,12 +4,18 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import net.druidlabs.updtr.io.InOut;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public final class Mapping {
 
@@ -17,7 +23,8 @@ public final class Mapping {
 
     public static final String MAPPINGS_FILE_NAME = "Mod mappings.json";
 
-    private static final Type MAPPING_MAP_TYPE = new TypeToken<Set<CFMod>>(){}.getType();
+    private static final Type MAPPING_MAP_TYPE = new TypeToken<Set<CFMod>>() {
+    }.getType();
 
     private Mapping() {
     }
@@ -57,6 +64,56 @@ public final class Mapping {
             ErrorLogger.logError(e);
 
             return CURSEFORGE_MOD_MAPPINGS;
+        }
+    }
+
+    public static @Nullable CFMod getMapping(Mod mod) {
+        for (CFMod mapping : getLocalMappings()) {
+
+            if (mapping.equalsMod(mod, true, false)) {
+                return mapping;
+            }
+        }
+
+        return null;
+    }
+
+    public static void updateMappings() {
+        try {
+            Set<CFMod> currentMappings = getLocalMappings();
+
+            if (currentMappings.isEmpty()) {
+                return;
+            }
+
+            Set<Mod> currentInstalledMods = InOut.loadLocalMods(null);
+
+            if (currentInstalledMods.isEmpty()) {
+                return;
+            }
+
+            CURSEFORGE_MOD_MAPPINGS.clear();
+
+            Map<String, Integer> mappedEntry = currentMappings.stream()
+                    .collect(Collectors.toMap(CFMod::getModId, CFMod::getProjectId));
+
+            int updatedMappings = 0;
+
+            for (Mod mod : currentInstalledMods) {
+                Integer projectId = mappedEntry.get(mod.getModId());
+
+                if (projectId != null) {
+                    addMappingEntry(mod, projectId);
+
+                    updatedMappings++;
+                }
+            }
+
+            persistMappings();
+
+            System.out.println("Updated mappings for " + updatedMappings + "/" + currentInstalledMods.size() + " mods");
+        } catch (Exception e) {
+            ErrorLogger.logError(e);
         }
 
     }

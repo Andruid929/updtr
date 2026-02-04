@@ -29,8 +29,30 @@ public final class CFMod extends Mod {
     }
 
     @Override
+    public String getModFileName() {
+        return super.getModFileName();
+    }
+
+    @Override
     public String getModVersion() {
         return super.getModVersion();
+    }
+
+    public boolean equalsMod(@NotNull Mod mod, boolean compareFileName, boolean compareVersion) {
+        boolean equalsName = getModName().equals(mod.getModName());
+        boolean equalsId = getModId().equals(mod.getModId());
+        boolean equalsVersion = getModVersion().equals(mod.getModVersion());
+        boolean equalsFileName = getModFileName().equals(mod.getModFileName());
+
+        if (compareFileName && compareVersion) {
+            return equalsName && equalsId && equalsVersion && equalsFileName;
+        } else if (compareFileName) {
+            return equalsName && equalsId && equalsFileName;
+        } else if (compareVersion) {
+            return equalsName && equalsId && equalsVersion;
+        }
+
+        return equalsFileName && equalsId && equalsVersion;
     }
 
     @Contract("_, _ -> new")

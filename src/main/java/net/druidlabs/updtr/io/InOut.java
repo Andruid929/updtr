@@ -81,7 +81,7 @@ public final class InOut {
         Set<Mod> localMods = new HashSet<>();
 
         try (Stream<Path> modDir = Files.walk(pathToRead)
-                .filter(path -> path.toString().startsWith(".jar"))) {
+                .filter(path -> path.toString().endsWith(".jar"))) {
 
             Set<Path> modFilePaths = modDir.collect(Collectors.toSet());
 

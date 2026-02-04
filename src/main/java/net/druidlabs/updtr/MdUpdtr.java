@@ -6,17 +6,14 @@ import net.druidlabs.updtr.api.Request;
 import net.druidlabs.updtr.api.requests.RequestException;
 import net.druidlabs.updtr.api.requests.SearchModRequest;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
-import net.druidlabs.updtr.io.InOut;
-import net.druidlabs.updtr.mods.CFMod;
 import net.druidlabs.updtr.mods.Mapping;
 import net.druidlabs.updtr.mods.Mod;
+import net.druidlabs.updtr.session.Session;
 import net.druidlabs.updtr.util.ResponseHandler;
 import net.druidlabs.updtr.util.SlugExtractor;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,49 +24,19 @@ public class MdUpdtr {
     public static void main(String[] args) throws InterruptedException {
         ErrorLogger.initiate();
 
-        run();
-    }
-
-    private static void run() throws InterruptedException {
         try {
-            Set<Mod> localMods = InOut.loadLocalMods(null);
+            Session session = Session.createSession();
 
-            Set<Mod> unmappedMods = checkMappings(localMods);
+            System.out.println(session.getGameVersion());
+            System.out.println(session.getModLoader().getName());
 
-            if (unmappedMods.isEmpty()) {
-
-            }
+            Mapping.updateMappings();
 
         } catch (Exception e) {
             ErrorLogger.logError(e);
 
             Thread.sleep(2000);
         }
-    }
-
-    private static Set<Mod> checkMappings(@NotNull Set<Mod> localModFiles) throws IOException {
-        Set<CFMod> mappedMods = Mapping.getLocalMappings();
-
-        if (mappedMods.isEmpty()) {
-            System.out.println("No mappings found");
-
-            return localModFiles;
-        }
-
-        int allMods = mappedMods.size();
-
-        int mappingsFound = 0;
-
-        for (Mod mappedMod : mappedMods) {
-
-            if (localModFiles.remove(mappedMod)) {
-                mappingsFound++;
-            }
-        }
-
-        System.out.println("Found " + mappingsFound + "/" + allMods + " mod mappings");
-
-        return localModFiles;
     }
 
     @Contract("_ -> param1")
@@ -131,9 +98,5 @@ public class MdUpdtr {
         }
 
         return modUrlMap;
-    }
-
-    private static void checkForModUpdates() {
-
     }
 }
