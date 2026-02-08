@@ -5,54 +5,35 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public final class CFMod extends Mod {
+public final class CFMod {
 
     private final int projectId;
+    private final String modName;
+    private final String modId;
 
     private CFMod(@NotNull Mod mod, int projectId) {
-        super(mod.getModId(), mod.getModVersion(), mod.getModName(), mod.getModFileName());
         this.projectId = projectId;
+        this.modName = mod.getModName();
+        this.modId = mod.getModId();
     }
 
     public int getProjectId() {
         return projectId;
     }
 
-    @Override
     public String getModId() {
-        return super.getModId();
+        return modId;
     }
 
-    @Override
     public String getModName() {
-        return super.getModName();
+        return modName;
     }
 
-    @Override
-    public String getModFileName() {
-        return super.getModFileName();
-    }
-
-    @Override
-    public String getModVersion() {
-        return super.getModVersion();
-    }
-
-    public boolean equalsMod(@NotNull Mod mod, boolean compareFileName, boolean compareVersion) {
+    public boolean equalsMod(@NotNull Mod mod) {
         boolean equalsName = getModName().equals(mod.getModName());
         boolean equalsId = getModId().equals(mod.getModId());
-        boolean equalsVersion = getModVersion().equals(mod.getModVersion());
-        boolean equalsFileName = getModFileName().equals(mod.getModFileName());
 
-        if (compareFileName && compareVersion) {
-            return equalsName && equalsId && equalsVersion && equalsFileName;
-        } else if (compareFileName) {
-            return equalsName && equalsId && equalsFileName;
-        } else if (compareVersion) {
-            return equalsName && equalsId && equalsVersion;
-        }
-
-        return equalsFileName && equalsId && equalsVersion;
+        return equalsId && equalsName;
     }
 
     @Contract("_, _ -> new")
@@ -66,12 +47,11 @@ public final class CFMod extends Mod {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), projectId);
+        return Objects.hash(modName, modId, projectId);
     }
 
     @Override
     public String toString() {
-        return "Mod{" + getModName() + "-" + projectId + " | " + getModId()
-                + ":" + getModVersion() + "}";
+        return "CFMod{" + getModName() + " | " + getModId() + ": " + getProjectId() + "}";
     }
 }

@@ -11,8 +11,6 @@ import java.io.IOException;
 
 public final class SearchModRequest extends Request {
 
-    public static final String ERROR_RESPONSE = "ERR";
-
     private int responseCode;
 
     private String response;

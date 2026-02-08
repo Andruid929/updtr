@@ -16,7 +16,10 @@ import java.net.URL;
 
 public abstract class Request implements AutoCloseable {
 
+    public static final String ERROR_RESPONSE = "ERR";
+
     private HttpsURLConnection connection;
+
     private final String requestURL;
 
     protected Request(@NotNull ForgeURL requestURL) {
@@ -38,6 +41,7 @@ public abstract class Request implements AutoCloseable {
     }
 
     protected String processResponse(InputStream inputStream) throws IOException {
+
         try (InputStreamReader streamReader = new InputStreamReader(inputStream);
              BufferedReader reader = new BufferedReader(streamReader)) {
 

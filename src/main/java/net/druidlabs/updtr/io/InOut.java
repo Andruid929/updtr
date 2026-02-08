@@ -7,9 +7,7 @@ import net.druidlabs.updtr.mods.Mod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,10 +17,34 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class InOut {
+
+    public static @NotNull String readModConfig(Path path) throws IOException {
+        try (JarFile modFile = new JarFile(path.toFile());
+             InputStream inputStream = modFile.getInputStream(modFile.getJarEntry("fabric.mod.json"));
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
+            StringBuilder jsonStringBuilder = new StringBuilder();
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                jsonStringBuilder.append(line);
+            }
+
+            return jsonStringBuilder.toString();
+        }
+    }
+
+    public static boolean UpdateFile(Mod mod, String downloadUrl, String newFilename) throws IOException {
+
+
+        return false;
+    }
 
     public static void backupMods() throws IOException {
         Path backupTo = Paths.MODS_BACKUP_FOLDER;
@@ -78,7 +100,7 @@ public final class InOut {
             pathToRead = Paths.MINECRAFT_FOLDER.resolve(modsFolderName);
         }
 
-        Set<Mod> localMods = new HashSet<>();
+        Set<Mod> localMods = ConcurrentHashMap.newKeySet();
 
         try (Stream<Path> modDir = Files.walk(pathToRead)
                 .filter(path -> path.toString().endsWith(".jar"))) {

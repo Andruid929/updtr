@@ -4,20 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import net.druidlabs.updtr.io.InOut;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public final class Mapping {
+public final class Mappings {
 
     private static final Set<CFMod> CURSEFORGE_MOD_MAPPINGS = ConcurrentHashMap.newKeySet();
 
@@ -26,7 +22,7 @@ public final class Mapping {
     private static final Type MAPPING_MAP_TYPE = new TypeToken<Set<CFMod>>() {
     }.getType();
 
-    private Mapping() {
+    private Mappings() {
     }
 
     public static void persistMappings() {
@@ -44,6 +40,10 @@ public final class Mapping {
     }
 
     public static Set<CFMod> getLoadedMappings() {
+        if (CURSEFORGE_MOD_MAPPINGS.isEmpty()) {
+            getLocalMappings();
+        }
+
         return CURSEFORGE_MOD_MAPPINGS;
     }
 
@@ -54,7 +54,7 @@ public final class Mapping {
 
             Set<CFMod> localMappings = new Gson().fromJson(mappingJsonData, MAPPING_MAP_TYPE);
 
-            if (!localMappings.isEmpty()) {
+            if (!localMappings.equals(CURSEFORGE_MOD_MAPPINGS)) {
                 CURSEFORGE_MOD_MAPPINGS.addAll(localMappings);
             }
 
@@ -70,7 +70,7 @@ public final class Mapping {
     public static @Nullable CFMod getMapping(Mod mod) {
         for (CFMod mapping : getLocalMappings()) {
 
-            if (mapping.equalsMod(mod, true, false)) {
+            if (mapping.equalsMod(mod)) {
                 return mapping;
             }
         }

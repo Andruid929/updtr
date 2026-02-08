@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
+import net.druidlabs.updtr.io.InOut;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -75,19 +76,10 @@ public class Mod implements Serializable {
         String version;
         String name;
 
-        try (JarFile modFile = new JarFile(path.toFile());
-             InputStream inputStream = modFile.getInputStream(modFile.getJarEntry("fabric.mod.json"));
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        try {
+            String fabricModJsonContents = InOut.readModConfig(path);
 
-            StringBuilder jsonStringBuilder = new StringBuilder();
-
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                jsonStringBuilder.append(line);
-            }
-
-            JsonObject gson = JsonParser.parseString(jsonStringBuilder.toString())
+            JsonObject gson = JsonParser.parseString(fabricModJsonContents)
                     .getAsJsonObject();
 
             id = gson.get("id").getAsString();

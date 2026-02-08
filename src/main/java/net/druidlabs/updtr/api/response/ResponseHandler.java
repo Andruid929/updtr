@@ -1,4 +1,4 @@
-package net.druidlabs.updtr.util;
+package net.druidlabs.updtr.api.response;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -43,7 +43,7 @@ public final class ResponseHandler {
     public static @NotNull ResponseHandler handleGetModResponse(@NotNull String response) {
         JsonObject root = JsonParser.parseString(response).getAsJsonObject();
 
-        return new ResponseHandler(root);
+        return new ResponseHandler(root.get("data").getAsJsonObject());
     }
 
     public static @NotNull ResponseHandler handleSearchModResponse(@NotNull String response, int index) {
