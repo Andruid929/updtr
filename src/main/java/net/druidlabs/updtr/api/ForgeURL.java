@@ -1,5 +1,6 @@
 package net.druidlabs.updtr.api;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,6 +23,11 @@ public final class ForgeURL {
 
     public @NotNull String getRequestURL() {
         return requestURL;
+    }
+
+    @Contract("_ -> new")
+    public static @NotNull Builder newBuilder(String @NotNull ... bits) throws MalformedURLException {
+        return new Builder(bits);
     }
 
     public static class Builder {

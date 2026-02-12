@@ -1,6 +1,7 @@
 package net.druidlabs.updtr.api.response;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +55,12 @@ public final class ResponseHandler {
 
     public static @NotNull ResponseHandler handleSearchModResponse(@NotNull String response) {
         return handleSearchModResponse(response, 0);
+    }
+
+    public static @NotNull ResponseHandler handleGetFileUrlResponse(String response) {
+        JsonElement root = JsonParser.parseString(response);
+
+        return new ResponseHandler(root.getAsJsonObject());
     }
 
 }

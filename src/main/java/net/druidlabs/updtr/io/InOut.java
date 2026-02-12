@@ -2,6 +2,7 @@ package net.druidlabs.updtr.io;
 
 import com.google.gson.Gson;
 import io.github.andruid929.leutils.time.TimeUnitConversion;
+import net.druidlabs.updtr.api.Download;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
 import net.druidlabs.updtr.mods.Mod;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.jar.JarFile;
@@ -40,8 +40,44 @@ public final class InOut {
         }
     }
 
-    public static boolean UpdateFile(Mod mod, String downloadUrl, String newFilename) throws IOException {
+    public static boolean deleteFile(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            return false;
+        }
 
+        return Files.deleteIfExists(path);
+    }
+
+    public static void createToDisk(Path path, byte[] bytes) throws IOException {
+        if (Files.notExists(path)) {
+            Files.createFile(path);
+        }
+
+        try (OutputStream stream = Files.newOutputStream(path);
+             BufferedOutputStream outputStream = new BufferedOutputStream(stream)) {
+
+            outputStream.write(bytes);
+        }
+    }
+
+    public static boolean updateFile(@NotNull Mod mod, @NotNull String downloadUrl) throws IOException {
+        String currentFilename = mod.getModFileName();
+
+        var modFileDownload = new Download(downloadUrl, Paths.MINECRAFT_MODS_FOLDER.resolve(mod.getModId().concat("newFile.jar")));
+
+        if (modFileDownload.getResponseCode() != 200) {
+            return false;
+        }
+
+        Path updateFile = modFileDownload.getSavePath();
+
+        if (Files.exists(updateFile)) {
+            System.out.println("Successfully installed update for: " + mod.getModName());
+
+            deleteFile(Paths.MINECRAFT_MODS_FOLDER.resolve(currentFilename));
+
+            return true;
+        }
 
         return false;
     }
@@ -90,7 +126,7 @@ public final class InOut {
         }
     }
 
-    public static @NotNull Set<Mod> loadLocalMods(@Nullable String modsFolderName) throws IOException {
+    public static @NotNull Set<Mod> loadLocalMods(@Nullable String modsFolderName) {
         Path pathToRead;
 
         if (modsFolderName == null) {
@@ -116,6 +152,10 @@ public final class InOut {
 
                 localMods.add(mod);
             });
+        } catch (Exception e) {
+            ErrorLogger.logError(e);
+
+            return localMods;
         }
 
         return localMods;

@@ -10,6 +10,8 @@ public final class Constants {
 
     public static final String FORGE_API_KEY = System.getenv("FORGE_API_KEY");
 
-    public static final String MINECRAFT_GAME_ID_SLUG = "gameId=432";
+    public static final String FORGE_API_KEY_HEADER = "x-api-key";
+
+    public static final String MINECRAFT_GAME_ID_PARAM = "gameId=432";
 
 }

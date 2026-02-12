@@ -9,35 +9,38 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 
-public final class GetModRequest extends Request {
+public final class GetModFileRequest extends Request {
 
-    private final int modProjectId;
+    private final int fileId;
 
-    private GetModRequest(ForgeURL requestURL, int modProjectId) {
+    private GetModFileRequest(@NotNull ForgeURL requestURL, int fileId) {
         super(requestURL);
-        this.modProjectId = modProjectId;
+
+        this.fileId = fileId;
     }
 
     @Override
     protected void processResponse(@NotNull HttpResponse<String> serverResponse) {
-        responseCode = serverResponse.statusCode();
-
         try {
+            responseCode = serverResponse.statusCode();
+
             if (responseCode == 200) {
                 response = serverResponse.body();
 
             } else if (responseCode == 404) {
-                throw new ResourceNotFoundException("Resource under project ID " + modProjectId + " could not be found");
+                throw new ResourceNotFoundException("Unable to find file under ID " + fileId);
             }
-
         } catch (IOException e) {
             ErrorLogger.logError(e);
+
+            response = ERROR_RESPONSE;
         }
     }
 
-    public static @NotNull GetModRequest requestForMod(int modProjectId) throws IOException {
-        ForgeURL requestURL = new ForgeURL.Builder("v1", "mods", String.valueOf(modProjectId)).build();
+    public static @NotNull GetModFileRequest getModFileUrl(int projectId, int fileId) throws IOException {
+        ForgeURL url = ForgeURL.newBuilder("v1", "mods", String.valueOf(projectId),
+                        "files", String.valueOf(fileId), "download-url").build();
 
-        return new GetModRequest(requestURL, modProjectId);
+        return new GetModFileRequest(url, fileId);
     }
 }

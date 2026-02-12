@@ -1,10 +1,15 @@
 package net.druidlabs.updtr.api;
 
-import net.druidlabs.updtr.api.requests.Requests;
+import net.druidlabs.updtr.Constants;
+import net.druidlabs.updtr.api.requests.GetModFileRequest;
+import net.druidlabs.updtr.api.requests.GetModRequest;
+import net.druidlabs.updtr.api.requests.SearchModRequest;
+import net.druidlabs.updtr.api.response.ResponseHandler;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,7 +18,13 @@ class ForgeURLTest {
 
     @Test
     void ssd() throws IOException, InterruptedException {
-        ForgeURL url = new ForgeURL.Builder("v1", "mods", String.valueOf(942925), "files", String.valueOf(7330543), "download-url").build();
+        Request request = GetModFileRequest.getModFileUrl(942925, 7394017);
+
+        String url = ResponseHandler.handleGetFileUrlResponse(request.getResponse()).asString("data");
+
+        Download download = new Download(url, Path.of("Modfile.jar"));
+
+        System.out.println(download.getSavePath());
     }
 
     @Test

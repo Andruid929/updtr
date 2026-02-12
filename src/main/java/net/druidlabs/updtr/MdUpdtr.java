@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import io.github.andruid929.leutils.time.TaskTimer;
 import io.github.andruid929.leutils.time.TimeUnitConversion;
 import net.druidlabs.updtr.api.Request;
+import net.druidlabs.updtr.api.requests.GetModFileRequest;
 import net.druidlabs.updtr.api.requests.GetModRequest;
 import net.druidlabs.updtr.api.requests.RequestException;
 import net.druidlabs.updtr.api.requests.SearchModRequest;
@@ -26,18 +27,14 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MdUpdtr {
 
     private static Session session;
 
-    private static Map<Mod, String> downloadQueue = new ConcurrentHashMap<>();
-
-    private static Set<Mod> localMods;
+    private static final Map<Mod, String> downloadQueue = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws InterruptedException {
         ErrorLogger.initiate();
@@ -48,34 +45,66 @@ public class MdUpdtr {
             System.out.println(session.getGameVersion());
             System.out.println(session.getModLoader().getName());
 
-            {
-                Thread.Builder.OfVirtual localModThread = Thread.ofVirtual().name("local-mod-worker");
-
-                Runnable installedModsTask = () -> {
-                    try {
-                        localMods = InOut.loadLocalMods(null);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                };
-
-                localModThread.start(installedModsTask);
-            }
+            Set<Mod> localMods = InOut.loadLocalMods(null);
 
             Set<Mod> unmappedMods = checkForUpdates(localMods);
 
             if (!unmappedMods.isEmpty()) {
                 //Ask the user to provide unmapped mod URLs
+                System.out.println("Mapps");
 
-                requestMappings(null);
+            } else {
+                InOut.backupMods();
+
+                downloadUpdates();
             }
-
 
 
         } catch (Exception e) {
             ErrorLogger.logError(e);
 
+        } finally {
             Thread.sleep(2000);
+        }
+    }
+
+    private static void downloadUpdates() throws InterruptedException {
+        Semaphore semaphore = new Semaphore(4);
+
+        ExecutorService downloadQueueService = Executors.newVirtualThreadPerTaskExecutor();
+
+        try {
+            InOut.backupMods();
+
+            for (Mod mod : downloadQueue.keySet()) {
+
+                downloadQueueService.submit(() -> {
+                    String downloadUrl = downloadQueue.get(mod);
+
+                    try {
+                        semaphore.acquire();
+
+                        if (InOut.updateFile(mod, downloadUrl)) {
+                            System.out.println("Done downloading update for " + mod.getModName());
+                        } else {
+                            System.out.println("Failed to download update for " + mod.getModName());
+                        }
+                    } catch (InterruptedException | IOException e) {
+                        ErrorLogger.logError(e);
+
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        semaphore.release();
+                    }
+
+                });
+            }
+        } catch (Exception e) {
+            ErrorLogger.logError(e);
+
+        } finally {
+            downloadQueueService.shutdown();
+            downloadQueueService.awaitTermination(1, TimeUnit.MINUTES);
         }
     }
 
@@ -101,7 +130,8 @@ public class MdUpdtr {
                     Thread currentThread = Thread.currentThread();
                     currentThread.setName(threadName);
 
-                    try (Request request = GetModRequest.requestForMod(modProjectId)) {
+                    try {
+                        Request request = GetModRequest.requestForMod(modProjectId);
 
                         int responseCode = request.getResponseCode();
 
@@ -127,12 +157,22 @@ public class MdUpdtr {
                         if (lastestFileIndex.getFilename().equals(mod.getModFileName())) {
                             //No updates found
                             System.out.println("No updates found");
-                        } else {
-                            //Add update to download queue
 
-
+                            return;
                         }
 
+                        //Add update to download queue
+                        int fileId = lastestFileIndex.getFileId();
+
+                        Request getModUpdateFileUrl = GetModFileRequest.getModFileUrl(modProjectId, fileId);
+
+                        if (getModUpdateFileUrl.getResponseCode() == 200) {
+                            ResponseHandler responseHandler = ResponseHandler.handleGetFileUrlResponse(getModUpdateFileUrl.getResponse());
+
+                            String url = responseHandler.asString("data");
+
+                            downloadQueue.put(mod, url);
+                        }
                     } catch (Exception e) {
                         ErrorLogger.logError(new RequestException(e, threadName.concat(" failed to finish")));
 
@@ -169,7 +209,8 @@ public class MdUpdtr {
 
                     Thread.currentThread().setName(threadName);
 
-                    try (Request request = SearchModRequest.searchMod(Constants.MINECRAFT_GAME_ID_SLUG, slug)) {
+                    try {
+                        Request request = SearchModRequest.searchMod(Constants.MINECRAFT_GAME_ID_PARAM, slug);
 
                         int projectId;
 

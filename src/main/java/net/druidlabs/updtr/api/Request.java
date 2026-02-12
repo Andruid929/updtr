@@ -2,75 +2,61 @@ package net.druidlabs.updtr.api;
 
 import net.druidlabs.updtr.Constants;
 import net.druidlabs.updtr.errorhandling.ErrorLogger;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import javax.net.ssl.HttpsURLConnection;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
-public abstract class Request implements AutoCloseable {
+public abstract class Request {
 
     public static final String ERROR_RESPONSE = "ERR";
 
-    private HttpsURLConnection connection;
+    protected String response;
+    protected int responseCode;
 
     private final String requestURL;
 
     protected Request(@NotNull ForgeURL requestURL) {
         this.requestURL = requestURL.getRequestURL();
 
-        try {
-            URL url = new URI(requestURL.getRequestURL()).toURL();
+        URI uri = URI.create(this.requestURL);
 
-            connection = (HttpsURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.addRequestProperty("x-api-key", Constants.FORGE_API_KEY);
-            connection.setConnectTimeout(10_000);
-            connection.setReadTimeout(15_000);
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .GET()
+                .header(Constants.FORGE_API_KEY_HEADER, Constants.FORGE_API_KEY)
+                .timeout(Duration.ofSeconds(15))
+                .build();
 
-            processRequest(connection);
-        } catch (IOException | URISyntaxException | RuntimeException e) {
+        try (HttpClient client = HttpClient.newHttpClient()) {
+
+            HttpResponse<String> response = client.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            processResponse(response);
+
+        } catch (IOException | InterruptedException e) {
             ErrorLogger.logError(e);
         }
     }
 
-    protected String processResponse(InputStream inputStream) throws IOException {
+    protected abstract void processResponse(@NotNull HttpResponse<String> serverResponse);
 
-        try (InputStreamReader streamReader = new InputStreamReader(inputStream);
-             BufferedReader reader = new BufferedReader(streamReader)) {
-
-            String line;
-
-            StringBuilder builder = new StringBuilder();
-
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
-
-            return builder.toString();
-        }
+    @Contract(pure = true)
+    public @NotNull String getResponse() {
+        return response;
     }
 
-    protected abstract void processRequest(@NotNull HttpsURLConnection connection);
+    public int getResponseCode() {
+        return responseCode;
+    }
 
-    public abstract @NotNull String getResponse();
-
-    public abstract int getResponseCode();
-
-    public String requestUrl() {
+    public String getRequestURL() {
         return requestURL;
-    }
-
-    @Override
-    public void close() {
-        if (connection != null) {
-            connection.disconnect();
-        }
     }
 }
